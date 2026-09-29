@@ -1,0 +1,12 @@
+pub mod auth;
+pub mod backup;
+pub mod categories;
+pub mod customers;
+pub mod dashboard;
+pub mod invoices;
+pub mod products;
+pub mod sales;
+pub mod settings;
+pub mod stats;
+pub mod stock_movements;
+pub mod suppliers;

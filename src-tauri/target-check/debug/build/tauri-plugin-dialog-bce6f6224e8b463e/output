@@ -1,0 +1,7 @@
+cargo:rerun-if-changed=permissions
+cargo:PERMISSION_FILES_PATH=C:\Users\david\OneDrive\Documents\GestiPlus\gestion-boutique\src-tauri\.\target-check\debug\build\tauri-plugin-dialog-bce6f6224e8b463e\out\tauri-plugin-dialog-permission-files
+cargo:rerun-if-env-changed=REMOVE_UNUSED_COMMANDS
+cargo:GLOBAL_API_SCRIPT_PATH=\\?\C:\Users\david\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-plugin-dialog-2.7.3\api-iife.js
+cargo:rustc-check-cfg=cfg(mobile)
+cargo:rustc-check-cfg=cfg(desktop)
+cargo:rustc-cfg=desktop
