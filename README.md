@@ -163,3 +163,4 @@ conteneur). Deux zones à surveiller lors du tout premier `cargo`/`tauri dev` :
 2. Versions de crates : `Cargo.toml` fixe des versions majeures larges
    (`rusqlite = "0.31"`, `tauri = "2"`, etc.) ; `cargo build` résoudra les
    dernières versions compatibles automatiquement.
+   pour lancer l'appli sur vscode:  npm run tauri dev  
