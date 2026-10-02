@@ -10,6 +10,7 @@ import type {
   Sale,
   SaleItemInput,
   Invoice,
+  CreditAccount,
   StoreSettings,
   DashboardStats,
   PeriodStats,
@@ -74,9 +75,21 @@ export const api = {
   customersUpdate: (id: number, customer: Customer) =>
     call<void>("customers_update", { id, customer }),
 
+  // Créances clients
+  creditsList: (search?: string) => call<CreditAccount[]>("credits_list", { search }),
+  creditsGet: (customer_id: number) => call<CreditAccount>("credits_get", { customerId: customer_id }),
+  creditPaymentCreate: (customer_id: number, sale_id: number, amount: number, note?: string) =>
+    call<CreditAccount>("credit_payment_create", { customerId: customer_id, saleId: sale_id, amount, note }),
+
   // Ventes
-  salesCreate: (customer_id: number | null, items: SaleItemInput[]) =>
-    call<Sale>("sales_create", { customerId: customer_id, items }),
+  salesCreate: (input: {
+    customerId: number | null;
+    customerName: string | null;
+    customerPhone: string | null;
+    paymentStatus: "payee" | "partielle" | "credit";
+    amountPaid?: number;
+    items: SaleItemInput[];
+  }) => call<Sale>("sales_create", input),
   salesList: (date_from?: string, date_to?: string, search?: string) =>
     call<Sale[]>("sales_list", { dateFrom: date_from, dateTo: date_to, search }),
   salesCancel: (sale_id: number) => call<void>("sales_cancel", { saleId: sale_id }),

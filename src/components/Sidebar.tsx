@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard, Package, Tags, ArrowLeftRight, ShoppingCart,
-  FileText, Users, Truck, BarChart3, Settings, Store, LogOut,
+  FileText, Users, Truck, BarChart3, Settings, Store, LogOut, CreditCard,
 } from "lucide-react";
 import { useAuth } from "../store/auth";
 
@@ -50,6 +50,7 @@ export default function Sidebar() {
         <Item to="/ventes" icon={ShoppingCart} label="Ventes" />
         <Item to="/factures" icon={FileText} label="Factures" />
         <Item to="/clients" icon={Users} label="Clients" />
+        <Item to="/creances" icon={CreditCard} label="Créances" />
         <Item to="/fournisseurs" icon={Truck} label="Fournisseurs" />
 
         <div className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Pilotage</div>

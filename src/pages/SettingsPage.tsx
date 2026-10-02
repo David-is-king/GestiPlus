@@ -99,6 +99,7 @@ export default function SettingsPage() {
           <div><label className="label">Emplacement</label><input className="input" value={settings.emplacement ?? ""} onChange={(e) => setSettings({ ...settings, emplacement: e.target.value })} /></div>
           <div><label className="label">Quartier</label><input className="input" value={settings.quartier ?? ""} onChange={(e) => setSettings({ ...settings, quartier: e.target.value })} /></div>
           <div><label className="label">Rue</label><input className="input" value={settings.rue ?? ""} onChange={(e) => setSettings({ ...settings, rue: e.target.value })} /></div>
+          <div><label className="label">Nom commercial</label><input className="input" value={settings.commercial_name ?? ""} onChange={(e) => setSettings({ ...settings, commercial_name: e.target.value })} /></div>
           <div><label className="label">Slogan</label><input className="input" value={settings.slogan ?? ""} onChange={(e) => setSettings({ ...settings, slogan: e.target.value })} /></div>
           <div><label className="label">Téléphone 1</label><input className="input" value={settings.phone1 ?? ""} onChange={(e) => setSettings({ ...settings, phone1: e.target.value })} /></div>
           <div><label className="label">Téléphone 2</label><input className="input" value={settings.phone2 ?? ""} onChange={(e) => setSettings({ ...settings, phone2: e.target.value })} /></div>

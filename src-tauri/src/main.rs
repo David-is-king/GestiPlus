@@ -11,7 +11,7 @@ use std::sync::Mutex;
 fn main() {
     tauri::Builder::default()
     
-        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .manage(Db(Mutex::new(db::init_connection())))
@@ -37,10 +37,13 @@ fn main() {
             commands::customers::customers_list,
             commands::customers::customers_create,
             commands::customers::customers_update,
+            commands::credits::credits_list,
+            commands::credits::credits_get,
+            commands::credits::credit_payment_create,
             commands::sales::sales_create,
             commands::sales::sales_list,
             commands::sales::sales_cancel,
-            commands:: invoices::invoices_open_pdf_for_sale,
+            commands::invoices::invoices_open_pdf_for_sale,
             commands::invoices::invoices_generate_for_sale,
             commands::invoices::invoices_list,
             commands::invoices::invoices_open_folder,

@@ -12,8 +12,10 @@ import Clients from "./pages/Clients";
 import Suppliers from "./pages/Suppliers";
 import Stats from "./pages/Stats";
 import SettingsPage from "./pages/SettingsPage";
+import Credits from "./pages/Credits";
 import { useAuth } from "./store/auth";
 import { ToastProvider } from "./context/ToastContext"; // Adaptez le chemin selon votre structure
+import { api } from "./api/tauri";
 
 export default function App() {
   const { user } = useAuth();
@@ -24,6 +26,27 @@ export default function App() {
     const t = setTimeout(() => setReady(true), 150);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let running = false;
+    const createAutomaticBackup = async () => {
+      if (running) return;
+      running = true;
+      try {
+        await api.backupCreate();
+      } catch {
+        // Une sauvegarde manuelle reste disponible si le dossier est indisponible.
+      } finally {
+        running = false;
+      }
+    };
+
+    createAutomaticBackup();
+    const timer = window.setInterval(createAutomaticBackup, 15 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [user]);
 
   if (!ready) return null;
 
@@ -44,6 +67,7 @@ export default function App() {
                 <Route path="/ventes" element={<Sales />} />
                 <Route path="/factures" element={<Invoices />} />
                 <Route path="/clients" element={<Clients />} />
+                <Route path="/creances" element={<Credits />} />
                 <Route path="/fournisseurs" element={<Suppliers />} />
                 <Route path="/statistiques" element={<Stats />} />
                 <Route path="/parametres" element={<SettingsPage />} />

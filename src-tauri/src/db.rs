@@ -70,6 +70,7 @@ fn run_migrations(conn: &Connection) {
             email TEXT,
             currency TEXT NOT NULL DEFAULT 'FCFA',
             slogan TEXT,
+            commercial_name TEXT,
             logo_path TEXT
         );
 
@@ -135,6 +136,8 @@ fn run_migrations(conn: &Connection) {
             customer_id INTEGER REFERENCES customers(id),
             total REAL NOT NULL DEFAULT 0,
             status TEXT NOT NULL DEFAULT 'validee' CHECK (status IN ('validee','annulee')),
+            amount_paid REAL NOT NULL DEFAULT 0,
+            payment_status TEXT NOT NULL DEFAULT 'payee',
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             cancelled_at TEXT
         );
@@ -175,13 +178,72 @@ fn run_migrations(conn: &Connection) {
             last_number INTEGER NOT NULL DEFAULT 0
         );
 
+        CREATE TABLE IF NOT EXISTS debt_payments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_id INTEGER NOT NULL REFERENCES customers(id),
+            sale_id INTEGER REFERENCES sales(id),
+            amount REAL NOT NULL CHECK (amount > 0),
+            note TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
         CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
         CREATE INDEX IF NOT EXISTS idx_products_supplier ON products(supplier_id);
         CREATE INDEX IF NOT EXISTS idx_movements_product ON stock_movements(product_id);
         CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items(sale_id);
+        CREATE INDEX IF NOT EXISTS idx_debt_payments_customer ON debt_payments(customer_id, created_at);
         "#,
     )
     .expect("Erreur lors des migrations");
+
+    ensure_store_settings_column(conn, "commercial_name", "TEXT");
+    ensure_column(conn, "sales", "amount_paid", "REAL NOT NULL DEFAULT 0");
+    ensure_column(conn, "sales", "payment_status", "TEXT NOT NULL DEFAULT 'payee'");
+    ensure_column(conn, "debt_payments", "sale_id", "INTEGER REFERENCES sales(id)");
+}
+
+fn ensure_store_settings_column(conn: &Connection, column: &str, definition: &str) {
+    let exists = conn
+        .prepare("PRAGMA table_info(store_settings)")
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| row.get::<_, String>(1))?
+                .filter_map(Result::ok)
+                .find(|name| name == column)
+                .map(Ok)
+                .unwrap_or_else(|| Ok(String::new()))
+        })
+        .map(|name| !name.is_empty())
+        .unwrap_or(false);
+
+    if !exists {
+        conn.execute(
+            &format!("ALTER TABLE store_settings ADD COLUMN {} {}", column, definition),
+            [],
+        )
+        .expect("Erreur lors de la migration de store_settings");
+    }
+}
+
+fn ensure_column(conn: &Connection, table: &str, column: &str, definition: &str) {
+    let exists = conn
+        .prepare(&format!("PRAGMA table_info({})", table))
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| row.get::<_, String>(1))?
+                .filter_map(Result::ok)
+                .find(|name| name == column)
+                .map(Ok)
+                .unwrap_or_else(|| Ok(String::new()))
+        })
+        .map(|name| !name.is_empty())
+        .unwrap_or(false);
+
+    if !exists {
+        conn.execute(
+            &format!("ALTER TABLE {} ADD COLUMN {} {}", table, column, definition),
+            [],
+        )
+        .expect("Erreur lors de la migration de la base de donnees");
+    }
 }
 
 fn seed_defaults(conn: &Connection) {

@@ -2,6 +2,7 @@ pub mod auth;
 pub mod backup;
 pub mod categories;
 pub mod customers;
+pub mod credits;
 pub mod dashboard;
 pub mod invoices;
 pub mod products;

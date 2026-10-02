@@ -7,7 +7,7 @@ pub fn backup_create(db: State<Db>) -> Result<String, String> {
     // S'assure que toutes les écritures WAL sont bien appliquées avant la copie.
     conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);").ok();
 
-    let date = chrono::Local::now().format("%Y-%m-%d_%Hh%M").to_string();
+    let date = chrono::Local::now().format("%Y-%m-%d_%Hh%M%S").to_string();
     let mut dest = backups_dir();
     dest.push(format!("backup_boutique_{}.db", date));
 

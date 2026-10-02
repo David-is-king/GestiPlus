@@ -36,6 +36,8 @@ export default function Invoices() {
               <th className="px-4 py-3">N° facture</th>
               <th className="px-4 py-3">Client</th>
               <th className="px-4 py-3">Total</th>
+              <th className="px-4 py-3">Déjà payé</th>
+              <th className="px-4 py-3">Reste dû</th>
               <th className="px-4 py-3">Date</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
@@ -46,6 +48,10 @@ export default function Invoices() {
                 <td className="px-4 py-3 font-medium text-gray-700">{inv.invoice_number}</td>
                 <td className="px-4 py-3 text-gray-500">{inv.customer_name ?? "Client comptoir"}</td>
                 <td className="px-4 py-3 text-gray-500">{inv.total.toLocaleString()} {currency}</td>
+                <td className="px-4 py-3 text-emerald-600">{inv.amount_paid.toLocaleString()} {currency}</td>
+                <td className={`px-4 py-3 font-medium ${inv.balance_due > 0 ? "text-red-600" : "text-emerald-600"}`}>
+                  {inv.balance_due.toLocaleString()} {currency}
+                </td>
                 <td className="px-4 py-3 text-gray-400">{new Date(inv.created_at).toLocaleString("fr-FR")}</td>
                 <td className="px-4 py-3 text-right">
                   <button
@@ -58,7 +64,7 @@ export default function Invoices() {
                 </td>
               </tr>
             ))}
-            {invoices.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">Aucune facture</td></tr>}
+            {invoices.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Aucune facture</td></tr>}
           </tbody>
         </table>
       </div>

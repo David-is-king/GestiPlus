@@ -9,6 +9,8 @@ interface CartLine {
   quantity: number;
 }
 
+type PaymentStatus = "payee" | "partielle" | "credit";
+
 export default function Sales() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -20,6 +22,11 @@ export default function Sales() {
   const [clientMode, setClientMode] = useState<"select" | "custom">("select");
   const [customerId, setCustomerId] = useState<number | "">("");
   const [customCustomerName, setCustomCustomerName] = useState("");
+  const [customCustomerPhone, setCustomCustomerPhone] = useState("");
+
+  // Paiement : payée intégralement / partielle / à crédit
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("payee");
+  const [amountPaid, setAmountPaid] = useState<number>(0);
 
   const [error, setError] = useState("");
   const [sales, setSales] = useState<Sale[]>([]);
@@ -93,6 +100,15 @@ export default function Sales() {
   }
 
   const total = cart.reduce((sum, l) => sum + l.product.sale_price * l.quantity, 0);
+  const needsIdentifiedCustomer = paymentStatus !== "payee";
+
+  function resetClientAndPaymentState() {
+    setCustomerId("");
+    setCustomCustomerName("");
+    setCustomCustomerPhone("");
+    setPaymentStatus("payee");
+    setAmountPaid(0);
+  }
 
   // Valider la vente
   async function handleValidate() {
@@ -101,23 +117,50 @@ export default function Sales() {
       setError("Ajoutez au moins un produit à la vente");
       return;
     }
+
+    const selectedCustomerId = clientMode === "select" && customerId !== "" ? Number(customerId) : null;
+    const typedName = clientMode === "custom" ? customCustomerName.trim() : "";
+    const typedPhone = clientMode === "custom" ? customCustomerPhone.trim() : "";
+
+    // Un paiement partiel ou à crédit exige un client identifiable par téléphone :
+    // soit choisi dans la liste, soit saisi avec nom + téléphone (créé/retrouvé côté serveur).
+    if (needsIdentifiedCustomer && !selectedCustomerId) {
+      if (clientMode !== "custom" || !typedName || !typedPhone) {
+        setError(
+          "Pour un paiement partiel ou à crédit, choisissez un client existant dans la liste, ou saisissez son nom ET son téléphone."
+        );
+        return;
+      }
+    }
+
+    if (paymentStatus === "partielle" && (amountPaid <= 0 || amountPaid >= total)) {
+      setError("Le montant versé doit être supérieur à 0 et inférieur au total de la vente.");
+      return;
+    }
+
     const items: SaleItemInput[] = cart.map((l) => ({
       product_id: l.product.id,
       quantity: l.quantity,
     }));
 
     try {
-      // 1. Enregistre la vente
-      const sale = await api.salesCreate(customerId === "" ? null : Number(customerId), items);
+      // 1. Enregistre la vente (le backend retrouve/crée le client si nécessaire)
+      const sale = await api.salesCreate({
+        customerId: selectedCustomerId,
+        customerName: typedName || null,
+        customerPhone: typedPhone || null,
+        paymentStatus,
+        amountPaid: paymentStatus === "partielle" ? amountPaid : undefined,
+        items,
+      });
 
-      // 2. Génère la facture avec le nom personnalisé si saisi
-      const customName = clientMode === "custom" && customCustomerName.trim() ? customCustomerName.trim() : null;
+      // 2. Génère la facture avec le nom personnalisé si saisi (cas "payée" sans fiche client)
+      const customName = clientMode === "custom" && typedName ? typedName : null;
       await api.invoicesGenerateForSale(sale.id, customName);
 
       setLastSale(sale);
       setCart([]);
-      setCustomerId("");
-      setCustomCustomerName("");
+      resetClientAndPaymentState();
       loadSales();
       loadProducts(); // Rafraîchit les stocks des produits
       showToast("Vente ajoutée avec succès !");
@@ -274,6 +317,7 @@ export default function Sales() {
                   setClientMode(clientMode === "select" ? "custom" : "select");
                   setCustomerId("");
                   setCustomCustomerName("");
+                  setCustomCustomerPhone("");
                 }}
               >
                 {clientMode === "select" ? "Saisir un nom" : "Choisir un client"}
@@ -282,7 +326,7 @@ export default function Sales() {
 
             {clientMode === "select" ? (
               <select
-                className="input mb-4 w-full"
+                className="input mb-3 w-full"
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value ? Number(e.target.value) : "")}
               >
@@ -290,17 +334,74 @@ export default function Sales() {
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
+                    {c.phone ? ` — ${c.phone}` : ""}
                   </option>
                 ))}
               </select>
             ) : (
-              <input
-                type="text"
-                className="input mb-4 w-full"
-                placeholder="Nom du client (ex: Jean Dupont)"
-                value={customCustomerName}
-                onChange={(e) => setCustomCustomerName(e.target.value)}
-              />
+              <>
+                <input
+                  type="text"
+                  className="input mb-2 w-full"
+                  placeholder="Nom du client (ex: Jean Dupont)"
+                  value={customCustomerName}
+                  onChange={(e) => setCustomCustomerName(e.target.value)}
+                />
+                {needsIdentifiedCustomer && (
+                  <input
+                    type="text"
+                    className="input mb-3 w-full"
+                    placeholder="Téléphone (obligatoire pour un crédit)"
+                    value={customCustomerPhone}
+                    onChange={(e) => setCustomCustomerPhone(e.target.value)}
+                  />
+                )}
+              </>
+            )}
+
+            {/* STATUT DU PAIEMENT */}
+            <label className="label mb-2">Statut du paiement</label>
+            <div className="mb-3 grid grid-cols-3 gap-1 rounded-lg bg-gray-100 p-1 text-xs">
+              {([
+                { key: "payee", label: "Payé" },
+                { key: "partielle", label: "Partiel" },
+                { key: "credit", label: "À crédit" },
+              ] as { key: PaymentStatus; label: string }[]).map((o) => (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => setPaymentStatus(o.key)}
+                  className={`rounded-md px-2 py-1.5 font-medium transition-colors ${
+                    paymentStatus === o.key ? "bg-white text-brand-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+
+            {paymentStatus === "partielle" && (
+              <div className="mb-3">
+                <label className="label">Montant versé maintenant</label>
+                <input
+                  type="number"
+                  className="input w-full"
+                  value={amountPaid}
+                  min={0}
+                  max={total}
+                  onChange={(e) => setAmountPaid(Number(e.target.value))}
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  Reste à payer : {Math.max(total - amountPaid, 0).toLocaleString()} {currency}
+                </p>
+              </div>
+            )}
+
+            {needsIdentifiedCustomer && clientMode === "select" && customerId === "" && (
+              <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                Un paiement partiel ou à crédit nécessite un client identifié : choisissez-le
+                dans la liste, ou passez en « Saisir un nom » et renseignez son téléphone.
+              </p>
             )}
 
             <div className="mb-4 flex items-center justify-between border-t border-gray-100 pt-4">
@@ -328,6 +429,13 @@ export default function Sales() {
           {lastSale && (
             <div className="mt-4 rounded-lg bg-brand-50 p-3 text-sm text-brand-700">
               Vente {lastSale.sale_number} enregistrée ({lastSale.total.toLocaleString()} {currency}).
+              {lastSale.payment_status !== "payee" && (
+                <span className="mt-1 block font-medium text-amber-700">
+                  {lastSale.payment_status === "credit"
+                    ? `Entièrement à crédit : ${lastSale.total.toLocaleString()} ${currency} dû.`
+                    : `Reste à payer : ${(lastSale.total - lastSale.amount_paid).toLocaleString()} ${currency}.`}
+                </span>
+              )}
               <button
                 className="mt-2 block font-medium underline"
                 onClick={() => handleInvoice(lastSale.id)}
@@ -365,13 +473,26 @@ export default function Sales() {
                     {s.total.toLocaleString()} {currency}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        isCancelled ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
-                      }`}
-                    >
-                      {isCancelled ? "Annulée" : "Validée"}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span
+                        className={`w-fit rounded-full px-2 py-0.5 text-xs font-medium ${
+                          isCancelled ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
+                        }`}
+                      >
+                        {isCancelled ? "Annulée" : "Validée"}
+                      </span>
+                      {!isCancelled && s.payment_status !== "payee" && (
+                        <span
+                          className={`w-fit rounded-full px-2 py-0.5 text-xs font-medium ${
+                            s.payment_status === "credit" ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"
+                          }`}
+                        >
+                          {s.payment_status === "credit"
+                            ? `Crédit : ${s.total.toLocaleString()} ${currency}`
+                            : `Reste : ${(s.total - s.amount_paid).toLocaleString()} ${currency}`}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-gray-400">
                     {new Date(s.created_at).toLocaleString("fr-FR")}

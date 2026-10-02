@@ -97,6 +97,8 @@ pub struct Sale {
     pub customer_name: Option<String>,
     pub total: f64,
     pub status: String,
+    pub amount_paid: f64,
+    pub payment_status: String,
     pub created_at: String,
     pub items: Vec<SaleItem>,
 }
@@ -113,6 +115,7 @@ pub struct StoreSettings {
     pub email: Option<String>,
     pub currency: String,
     pub slogan: Option<String>,
+    pub commercial_name: Option<String>,
     pub logo_path: Option<String>,
 }
 
@@ -157,8 +160,43 @@ pub struct Invoice {
     pub customer_id: Option<i64>,
     pub customer_name: Option<String>,
     pub total: f64,
+    pub amount_paid: f64,
+    pub balance_due: f64,
+    pub account_balance: f64,
     pub pdf_path: Option<String>,
     pub status: String,
     pub created_at: String,
     pub items: Vec<SaleItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CreditPayment {
+    pub id: i64,
+    pub customer_id: i64,
+    pub sale_id: Option<i64>,
+    pub amount: f64,
+    pub note: Option<String>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CreditSale {
+    pub sale_id: i64,
+    pub sale_number: String,
+    pub total: f64,
+    pub initial_paid: f64,
+    pub payments_applied: f64,
+    pub amount_paid: f64,
+    pub balance_due: f64,
+    pub created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CreditAccount {
+    pub customer: Customer,
+    pub total_sales: f64,
+    pub total_paid: f64,
+    pub balance_due: f64,
+    pub sales: Vec<CreditSale>,
+    pub payments: Vec<CreditPayment>,
 }
