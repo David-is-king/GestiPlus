@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod activation;
 pub mod backup;
 pub mod categories;
 pub mod customers;

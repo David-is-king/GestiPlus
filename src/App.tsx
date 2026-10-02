@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
+import Activation from "./pages/Activation";
 import Dashboard from "./pages/Dashboard";
 import ProductsList from "./pages/Stock/ProductsList";
 import Categories from "./pages/Stock/Categories";
@@ -20,12 +21,18 @@ import { api } from "./api/tauri";
 export default function App() {
   const { user } = useAuth();
   const [ready, setReady] = useState(false);
+  const [activated, setActivated] = useState<boolean | null>(null);
 
   useEffect(() => {
     // Laisse le temps au backend Tauri d'initialiser la base au premier lancement.
     const t = setTimeout(() => setReady(true), 150);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    api.activationStatus().then(setActivated).catch(() => setActivated(false));
+  }, [ready]);
 
   useEffect(() => {
     if (!user) return;
@@ -48,11 +55,13 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [user]);
 
-  if (!ready) return null;
+  if (!ready || activated === null) return null;
 
   return (
     <ToastProvider>
-      {!user ? (
+      {!activated ? (
+        <Activation onActivated={() => setActivated(true)} />
+      ) : !user ? (
         <Login />
       ) : (
         <div className="flex h-screen w-screen overflow-hidden bg-gray-50">

@@ -32,6 +32,9 @@ export interface DailyProductSales {
 }
 
 export const api = {
+  activationStatus: () => call<boolean>("activation_status"),
+  activationActivate: (key: string) => call<void>("activation_activate", { key }),
+
   // Auth
   login: (username: string, password: string) =>
     call<UserInfo>("auth_login", { username, password }),

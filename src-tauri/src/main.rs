@@ -16,6 +16,8 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .manage(Db(Mutex::new(db::init_connection())))
         .invoke_handler(tauri::generate_handler![
+            commands::activation::activation_status,
+            commands::activation::activation_activate,
             commands::auth::auth_login,
             commands::auth::auth_change_password,
             commands::auth::auth_change_username,
